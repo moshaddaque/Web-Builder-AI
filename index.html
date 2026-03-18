@@ -1,298 +1,1922 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI Website Builder</title>
-<script src="https://cdn.tailwindcss.com"></script>
 
-<style>
-  body {
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-</style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Website Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-base: #0a0a0f;
+      --bg-panel: #111118;
+      --bg-surface: #1a1a24;
+      --bg-raised: #22222e;
+      --border: #2a2a3a;
+      --border-light: #3a3a50;
+      --accent: #5b6ef5;
+      --accent-glow: rgba(91, 110, 245, 0.25);
+      --accent-light: #7b8ef8;
+      --green: #4ade80;
+      --yellow: #facc15;
+      --red: #f87171;
+      --text-primary: #e8e8f0;
+      --text-muted: #8888aa;
+      --text-faint: #4a4a66;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 14px;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Scrollbars ── */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 2px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    /* ── Layout ── */
+    #app {
+      display: flex;
+      height: 100dvh;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 12px 0;
+      overflow: hidden;
+      transition: transform 0.25s ease;
+      z-index: 20;
+    }
+
+    #sidebar.collapsed {
+      transform: translateX(-100%);
+      position: absolute;
+      height: 100%;
+    }
+
+    .sidebar-header {
+      padding: 0 12px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 8px var(--accent);
+      }
+
+      50% {
+        opacity: 0.5;
+        box-shadow: 0 0 3px var(--accent);
+      }
+    }
+
+    #btn-new-project {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    #btn-new-project:hover {
+      background: var(--accent-light);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .projects-label {
+      padding: 12px 12px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    #project-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px;
+    }
+
+    .project-item {
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      transition: background 0.12s, color 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-item:hover {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    .project-item.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+
+    .project-item .project-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .project-item .project-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .project-item .delete-btn {
+      font-size: 11px;
+      color: var(--text-faint);
+      padding: 1px 4px;
+      border-radius: 3px;
+      opacity: 0;
+      transition: opacity 0.12s;
+      flex-shrink: 0;
+    }
+
+    .project-item:hover .delete-btn {
+      opacity: 1;
+    }
+
+    .project-item .delete-btn:hover {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--red);
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px 2px;
+    }
+
+    #btn-settings {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 6px 4px;
+      border-radius: 5px;
+      transition: color 0.12s, background 0.12s;
+      width: 100%;
+    }
+
+    #btn-settings:hover {
+      color: var(--text-primary);
+      background: var(--bg-surface);
+    }
+
+    /* ── Main Area ── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── Window Header ── */
+    #window-header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Traffic lights */
+    .traffic-lights {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tl {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .tl-red {
+      background: var(--red);
+      box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+    }
+
+    .tl-yellow {
+      background: var(--yellow);
+      box-shadow: 0 0 6px rgba(250, 204, 21, 0.5);
+    }
+
+    .tl-green {
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+    }
+
+    .header-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-title span {
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .toggle-group {
+      display: flex;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .toggle-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .toggle-btn:not(.active):hover {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    #btn-download {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+
+    #btn-download:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+      background: var(--bg-raised);
+    }
+
+    #btn-sidebar-toggle {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: none;
+      transition: color 0.12s;
+    }
+
+    #btn-sidebar-toggle:hover {
+      color: var(--text-primary);
+    }
+
+    /* ── Workspace ── */
+    #workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── Chat Panel ── */
+    #chat-panel {
+      width: 380px;
+      min-width: 280px;
+      max-width: 45vw;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg-base);
+      overflow: hidden;
+    }
+
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Welcome State */
+    #welcome-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 24px;
+      gap: 14px;
+      color: var(--text-faint);
+    }
+
+    .welcome-icon {
+      font-size: 40px;
+      line-height: 1;
+      filter: grayscale(0.3);
+    }
+
+    .welcome-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .welcome-sub {
+      font-size: 11.5px;
+      line-height: 1.7;
+      max-width: 260px;
+    }
+
+    .welcome-examples {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .example-chip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+
+    .example-chip:hover {
+      border-color: var(--accent);
+      color: var(--text-primary);
+      background: var(--bg-raised);
+    }
+
+    /* Message Bubbles */
+    .msg {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: msg-in 0.2s ease;
+    }
+
+    @keyframes msg-in {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .msg-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .msg.user .msg-label {
+      color: var(--accent-light);
+      text-align: right;
+    }
+
+    .msg.assistant .msg-label {
+      color: var(--text-faint);
+    }
+
+    .msg-bubble {
+      padding: 10px 13px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.65;
+      max-width: 100%;
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--accent);
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+
+    .msg.assistant .msg-bubble {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+    }
+
+    .msg.assistant.error .msg-bubble {
+      background: rgba(248, 113, 113, 0.08);
+      border-color: rgba(248, 113, 113, 0.3);
+      color: var(--red);
+    }
+
+    /* Typing indicator */
+    #typing-indicator {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 0;
+    }
+
+    #typing-indicator.visible {
+      display: flex;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dots span {
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce-dot 1.2s ease-in-out infinite;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes bounce-dot {
+
+      0%,
+      80%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+
+      40% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    .typing-label {
+      font-size: 10px;
+      color: var(--text-faint);
+    }
+
+    /* ── Chat Footer ── */
+    #chat-footer {
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      background: var(--bg-panel);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    #user-input {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-primary);
+      resize: none;
+      outline: none;
+      min-height: 40px;
+      max-height: 120px;
+      line-height: 1.5;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    #user-input::placeholder {
+      color: var(--text-faint);
+    }
+
+    #user-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    #btn-send {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+
+    #btn-send:hover {
+      background: var(--accent-light);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    #btn-send:active {
+      transform: scale(0.93);
+    }
+
+    #btn-send:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #btn-send svg {
+      pointer-events: none;
+    }
+
+    /* ── Preview / Code Panel ── */
+    #output-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-base);
+      min-width: 0;
+    }
+
+    /* Preview */
+    #preview-frame {
+      flex: 1;
+      border: none;
+      background: #fff;
+      display: none;
+    }
+
+    #preview-frame.active {
+      display: block;
+    }
+
+    /* Empty preview placeholder */
+    #preview-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-faint);
+    }
+
+    #preview-placeholder.hidden {
+      display: none;
+    }
+
+    .placeholder-icon {
+      font-size: 48px;
+      opacity: 0.3;
+    }
+
+    .placeholder-text {
+      font-size: 12px;
+      font-family: 'Syne', sans-serif;
+      color: var(--text-faint);
+      text-align: center;
+    }
+
+    /* Code view */
+    #code-view {
+      flex: 1;
+      overflow: auto;
+      display: none;
+      padding: 16px;
+    }
+
+    #code-view.active {
+      display: block;
+    }
+
+    #code-content {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      color: var(--text-primary);
+      white-space: pre;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 100%;
+      word-break: break-all;
+    }
+
+    /* Code syntax colors */
+    .tok-tag {
+      color: #79b8ff;
+    }
+
+    .tok-attr {
+      color: #b392f0;
+    }
+
+    .tok-str {
+      color: #9ecbff;
+    }
+
+    .tok-cmnt {
+      color: var(--text-faint);
+      font-style: italic;
+    }
+
+    /* ── Settings Modal ── */
+    #modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      display: none;
+    }
+
+    #modal-overlay.open {
+      display: flex;
+    }
+
+    #settings-modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+      animation: modal-in 0.2s ease;
+    }
+
+    @keyframes modal-in {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.12s, background 0.12s;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+      background: var(--bg-surface);
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .field-hint {
+      font-size: 10.5px;
+      color: var(--text-faint);
+      margin-top: 2px;
+    }
+
+    .modal-input {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-primary);
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .modal-input::placeholder {
+      color: var(--text-faint);
+    }
+
+    .modal-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn-secondary {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-light);
+      color: var(--text-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-light);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* ── Empty project list ── */
+    .empty-projects {
+      padding: 12px;
+      font-size: 11px;
+      color: var(--text-faint);
+      text-align: center;
+    }
+
+    /* ── Resize handle ── */
+    #resize-handle {
+      width: 4px;
+      cursor: col-resize;
+      background: var(--border);
+      flex-shrink: 0;
+      transition: background 0.12s;
+    }
+
+    #resize-handle:hover {
+      background: var(--accent);
+    }
+
+    /* ── Status bar ── */
+    #status-bar {
+      height: 22px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+      flex-shrink: 0;
+      display: none;
+    }
+
+    #status-bar.visible {
+      display: flex;
+    }
+
+    .status-text {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #fff;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      #sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        transform: translateX(-100%);
+      }
+
+      #sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+      }
+
+      #btn-sidebar-toggle {
+        display: flex;
+      }
+
+      #chat-panel {
+        width: 100%;
+        max-width: 100%;
+        border-right: none;
+      }
+
+      #output-panel {
+        display: none;
+      }
+
+      #output-panel.mobile-show {
+        display: flex;
+      }
+
+      #chat-panel.mobile-hide {
+        display: none;
+      }
+
+      #resize-handle {
+        display: none;
+      }
+    }
+
+    /* ── Grid scanline effect on base bg ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(91, 110, 245, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(91, 110, 245, 0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
 </head>
 
-<body class="bg-gray-100">
+<body>
 
-<!-- MAIN CONTAINER -->
-<div class="flex flex-1 overflow-hidden">
-
-  <!-- SIDEBAR -->
-  <aside class="w-64 bg-white border-r flex flex-col">
-    <div class="p-4 border-b">
-      <button id="newProjectBtn"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">
-        + New Project
-      </button>
-    </div>
-
-    <div id="projectList" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
-
-    <div class="p-4 border-t">
-      <button id="openSettings" class="text-gray-600 hover:text-black">
-        ⚙ Settings
-      </button>
-    </div>
-  </aside>
-
-  <!-- MAIN PANEL -->
-  <div class="flex flex-col flex-1 overflow-hidden">
-
-    <!-- HEADER -->
-    <header class="flex items-center justify-between bg-white border-b px-4 py-2">
-      <div class="flex items-center space-x-2 text-xl">
-        <span>🔴</span>
-        <span>🟡</span>
-        <span>🟢</span>
+  <!-- ════════════════════════════════════════════════════════
+     SETTINGS MODAL
+═══════════════════════════════════════════════════════════ -->
+  <div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="settings-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+          </svg>
+          API Settings
+        </div>
+        <button class="modal-close" id="btn-close-modal" aria-label="Close settings">✕</button>
       </div>
-
-      <div class="flex space-x-2">
-        <button id="previewBtn" class="px-3 py-1 bg-gray-200 rounded">Preview</button>
-        <button id="codeBtn" class="px-3 py-1 bg-gray-200 rounded">Code</button>
-        <button id="downloadBtn" class="px-3 py-1 bg-green-600 text-white rounded">Download</button>
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label" for="input-api-url">API Endpoint URL</label>
+          <input class="modal-input" id="input-api-url" type="url"
+            placeholder="https://openrouter.ai/api/v1/chat/completions" autocomplete="off" spellcheck="false" />
+          <div class="field-hint">OpenRouter or any OpenAI-compatible endpoint.</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="input-api-key">API Key</label>
+          <input class="modal-input" id="input-api-key" type="password" placeholder="sk-or-v1-••••••••••••••••"
+            autocomplete="off" />
+          <div class="field-hint">Your key is stored locally and never sent to any server except the API endpoint above.
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="input-model">Model ID</label>
+          <input class="modal-input" id="input-model" type="text" placeholder="deepseek/deepseek-r1:free"
+            autocomplete="off" spellcheck="false" />
+          <div class="field-hint">e.g. <code style="color:var(--accent-light)">deepseek/deepseek-r1:free</code>, <code
+              style="color:var(--accent-light)">openai/gpt-4o</code>, <code
+              style="color:var(--accent-light)">anthropic/claude-3.5-sonnet</code></div>
+        </div>
       </div>
-    </header>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-cancel-settings">Cancel</button>
+        <button class="btn-primary" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
 
-    <!-- OUTPUT AREA -->
-    <main class="flex-1 overflow-auto bg-white relative">
-      <iframe id="previewFrame" class="w-full h-full hidden"></iframe>
-      <pre id="codeView" class="p-4 text-sm overflow-auto"></pre>
-    </main>
 
-    <!-- FOOTER -->
-    <footer class="border-t bg-white p-3 flex-shrink-0">
-      <div class="flex space-x-2">
-        <textarea id="userInput"
-          class="flex-1 border rounded p-2 resize-none"
-          rows="2"
-          placeholder="Describe your website..."></textarea>
-        <button id="sendBtn"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded">
-          Send
+  <!-- ════════════════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════════════════ -->
+  <div id="app">
+
+    <!-- ── SIDEBAR ── -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-dot"></div>
+          AI Builder
+        </div>
+        <button id="btn-new-project" title="Start a new project">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New Project
         </button>
       </div>
-    </footer>
 
-  </div>
-</div>
+      <div class="projects-label">Projects</div>
+      <div id="project-list">
+        <div class="empty-projects" id="empty-msg">No projects yet.</div>
+      </div>
 
-<!-- SETTINGS MODAL -->
-<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
-  <div class="bg-white w-96 p-6 rounded shadow-lg space-y-4">
-    <h2 class="text-lg font-semibold">Settings</h2>
+      <div class="sidebar-footer">
+        <button id="btn-settings" title="Open settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          </svg>
+          Settings
+        </button>
+      </div>
+    </aside>
 
-    <div>
-      <label class="text-sm">API URL</label>
-      <input id="apiUrlInput" type="text"
-        class="w-full border rounded p-2 mt-1" />
-    </div>
+    <!-- ── MAIN ── -->
+    <main id="main">
 
-    <div>
-      <label class="text-sm">API Key</label>
-      <input id="apiKeyInput" type="password"
-        class="w-full border rounded p-2 mt-1" />
-    </div>
+      <!-- Window Header -->
+      <header id="window-header">
+        <button id="btn-sidebar-toggle" aria-label="Toggle sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
 
-    <div>
-      <label class="text-sm">Model ID</label>
-      <input id="modelInput" type="text"
-        class="w-full border rounded p-2 mt-1" />
-    </div>
+        <div class="traffic-lights">
+          <div class="tl tl-red"></div>
+          <div class="tl tl-yellow"></div>
+          <div class="tl tl-green"></div>
+        </div>
 
-    <div class="flex justify-end space-x-2">
-      <button id="closeSettings" class="px-3 py-1 bg-gray-200 rounded">Cancel</button>
-      <button id="saveSettings" class="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
-    </div>
-  </div>
-</div>
+        <div class="header-title">
+          <span id="project-title">Untitled Project</span>
+        </div>
 
-<script>
-/* ===============================
-   CONFIG (FORCED OPENROUTER)
-================================= */
-const SYSTEM_PROMPT =
-"You are a web developer. Output ONLY raw HTML code. No markdown. No explanations.";
+        <div class="header-actions">
+          <div class="toggle-group" role="group" aria-label="View mode">
+            <button class="toggle-btn active" id="btn-view-preview" title="Switch to Preview">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              Preview
+            </button>
+            <button class="toggle-btn" id="btn-view-code" title="Switch to Code">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+              Code
+            </button>
+          </div>
 
-let API_URL = "https://openrouter.ai/api/v1/chat/completions";
-let MODEL_ID = "deepseek/deepseek-r1:free";
-let API_KEY = "";
+          <button id="btn-download" title="Download HTML file">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download
+          </button>
+        </div>
+      </header>
 
-/* ===============================
-   STATE
-================================= */
-let projects = JSON.parse(localStorage.getItem("ai_builder_projects") || "[]");
-let currentProjectIndex = null;
+      <!-- Workspace -->
+      <div id="workspace">
 
-/* ===============================
-   DOM
-================================= */
-const projectList = document.getElementById("projectList");
-const previewFrame = document.getElementById("previewFrame");
-const codeView = document.getElementById("codeView");
-const userInput = document.getElementById("userInput");
+        <!-- Chat Panel -->
+        <div id="chat-panel">
+          <div id="chat-messages" role="log" aria-live="polite">
+            <!-- Welcome State -->
+            <div id="welcome-state">
+              <div class="welcome-icon">✦</div>
+              <div class="welcome-title">Describe your website</div>
+              <div class="welcome-sub">Tell the AI what you want to build — it will generate a complete, working HTML
+                page for you.</div>
+              <div class="welcome-examples">
+                <button class="example-chip"
+                  data-prompt="A dark landing page for a SaaS product with a hero section, features grid, and CTA button">⚡
+                  SaaS landing page (dark)</button>
+                <button class="example-chip"
+                  data-prompt="A clean portfolio site for a UI designer with project cards, about section, and contact form">🎨
+                  Designer portfolio</button>
+                <button class="example-chip"
+                  data-prompt="A personal blog homepage with article cards, sidebar, and newsletter signup">📰 Blog
+                  homepage</button>
+                <button class="example-chip"
+                  data-prompt="A restaurant website with menu, gallery, and reservation form, warm color theme">🍽️
+                  Restaurant website</button>
+              </div>
+            </div>
+          </div>
 
-/* ===============================
-   INIT
-================================= */
-function init() {
-  loadSettings();
-  renderProjects();
-}
-init();
+          <!-- Typing Indicator -->
+          <div id="typing-indicator">
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="typing-label">Generating...</div>
+          </div>
 
-/* ===============================
-   SETTINGS
-================================= */
-function loadSettings() {
-  const saved = JSON.parse(localStorage.getItem("ai_builder_settings") || "{}");
-  API_URL = saved.apiUrl || API_URL;
-  MODEL_ID = saved.modelId || MODEL_ID;
-  API_KEY = saved.apiKey || "";
+          <!-- Chat Input Footer -->
+          <div id="chat-footer">
+            <div class="input-row">
+              <textarea id="user-input" placeholder="Describe your website or request changes..." rows="1"
+                aria-label="Chat input" spellcheck="true"></textarea>
+              <button id="btn-send" title="Send message" aria-label="Send">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
 
-  document.getElementById("apiUrlInput").value = API_URL;
-  document.getElementById("modelInput").value = MODEL_ID;
-  document.getElementById("apiKeyInput").value = API_KEY;
-}
+        <!-- Resize Handle -->
+        <div id="resize-handle" title="Drag to resize"></div>
 
-function saveSettings() {
-  API_URL = document.getElementById("apiUrlInput").value;
-  MODEL_ID = document.getElementById("modelInput").value;
-  API_KEY = document.getElementById("apiKeyInput").value;
+        <!-- Output Panel -->
+        <div id="output-panel">
 
-  localStorage.setItem("ai_builder_settings", JSON.stringify({
-    apiUrl: API_URL,
-    modelId: MODEL_ID,
-    apiKey: API_KEY
-  }));
+          <!-- Preview placeholder (no code yet) -->
+          <div id="preview-placeholder">
+            <div class="placeholder-icon">◈</div>
+            <div class="placeholder-text">Your generated website<br>will appear here</div>
+          </div>
 
-  closeModal();
-}
+          <!-- iframe Preview -->
+          <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin" title="Website Preview"></iframe>
 
-function closeModal() {
-  document.getElementById("settingsModal").classList.add("hidden");
-}
+          <!-- Code View -->
+          <div id="code-view">
+            <pre id="code-content"></pre>
+          </div>
 
-/* ===============================
-   PROJECTS
-================================= */
-function renderProjects() {
-  projectList.innerHTML = "";
-  projects.forEach((p, index) => {
-    const btn = document.createElement("button");
-    btn.className = "w-full text-left px-3 py-2 bg-gray-100 rounded hover:bg-gray-200";
-    btn.textContent = p.name;
-    btn.onclick = () => loadProject(index);
-    projectList.appendChild(btn);
-  });
-}
+        </div>
+      </div><!-- /workspace -->
 
-function newProject() {
-  const name = "Project " + (projects.length + 1);
-  projects.push({ name, html: "" });
-  currentProjectIndex = projects.length - 1;
-  saveProjects();
-  renderProjects();
-  updateOutput("");
-}
+    </main>
+  </div><!-- /app -->
 
-function loadProject(index) {
-  currentProjectIndex = index;
-  updateOutput(projects[index].html);
-}
 
-function saveProjects() {
-  localStorage.setItem("ai_builder_projects", JSON.stringify(projects));
-}
+  <!-- ════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+  <script>
+    // ── Constants ──────────────────────────────────────────────
+    const STORAGE_KEY = 'aibuilder_data';
+    const SETTINGS_KEY = 'aibuilder_settings';
 
-/* ===============================
-   OUTPUT
-================================= */
-function updateOutput(html) {
-  previewFrame.srcdoc = html;
-  codeView.textContent = html;
-}
+    const DEFAULT_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+    const DEFAULT_MODEL = 'deepseek/deepseek-r1:free';
 
-document.getElementById("previewBtn").onclick = () => {
-  previewFrame.classList.remove("hidden");
-  codeView.classList.add("hidden");
-};
+    const SYSTEM_PROMPT = `You are an expert web developer and UI designer. Your sole task is to generate complete, single-file HTML websites.
 
-document.getElementById("codeBtn").onclick = () => {
-  codeView.classList.remove("hidden");
-  previewFrame.classList.add("hidden");
-};
+RULES — FOLLOW THESE EXACTLY:
+1. Output ONLY raw HTML code. No markdown, no backticks, no explanation text before or after.
+2. Start your response directly with <!DOCTYPE html> and end with </html>.
+3. The HTML must be fully self-contained (embed all CSS in <style> and all JS in <script> tags).
+4. Use modern CSS (flexbox/grid, custom properties, transitions). Tailwind is NOT available in the iframe.
+5. Make the design beautiful, responsive, and production-quality.
+6. When the user asks for changes, output the ENTIRE modified HTML file, not just a snippet.
+7. Never include code fences, explanations, or any text outside the HTML document.`;
 
-document.getElementById("downloadBtn").onclick = () => {
-  if (currentProjectIndex === null) return;
-  const blob = new Blob([projects[currentProjectIndex].html], { type: "text/html" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "index.html";
-  a.click();
-};
+    // ── State ──────────────────────────────────────────────────
+    let state = {
+      projects: [],         // [{ id, name, messages: [{role, content}], html, createdAt }]
+      activeProjectId: null
+    };
 
-/* ===============================
-   API CALL (ANTI-CRASH JSON)
-================================= */
-async function generateWebsite(prompt) {
-  if (!API_KEY) {
-    alert("Please set API Key in settings.");
-    return;
-  }
+    let settings = {
+      apiUrl: DEFAULT_API_URL,
+      apiKey: '',
+      model: DEFAULT_MODEL
+    };
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + API_KEY
-    },
-    body: JSON.stringify({
-      model: MODEL_ID,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt }
-      ]
-    })
-  });
+    // ── DOM Refs ───────────────────────────────────────────────
+    const $sidebar = document.getElementById('sidebar');
+    const $projectList = document.getElementById('project-list');
+    const $emptyMsg = document.getElementById('empty-msg');
+    const $chatMessages = document.getElementById('chat-messages');
+    const $welcomeState = document.getElementById('welcome-state');
+    const $typingIndicator = document.getElementById('typing-indicator');
+    const $userInput = document.getElementById('user-input');
+    const $btnSend = document.getElementById('btn-send');
+    const $projectTitle = document.getElementById('project-title');
+    const $previewFrame = document.getElementById('preview-frame');
+    const $previewHolder = document.getElementById('preview-placeholder');
+    const $codeView = document.getElementById('code-view');
+    const $codeContent = document.getElementById('code-content');
+    const $btnViewPreview = document.getElementById('btn-view-preview');
+    const $btnViewCode = document.getElementById('btn-view-code');
+    const $btnDownload = document.getElementById('btn-download');
+    const $btnNewProject = document.getElementById('btn-new-project');
+    const $btnSettings = document.getElementById('btn-settings');
+    const $modalOverlay = document.getElementById('modal-overlay');
+    const $inputApiUrl = document.getElementById('input-api-url');
+    const $inputApiKey = document.getElementById('input-api-key');
+    const $inputModel = document.getElementById('input-model');
+    const $btnSaveSettings = document.getElementById('btn-save-settings');
+    const $btnCloseModal = document.getElementById('btn-close-modal');
+    const $btnCancelSettings = document.getElementById('btn-cancel-settings');
+    const $btnSidebarToggle = document.getElementById('btn-sidebar-toggle');
 
-  const text = await response.text();
+    // ── View mode (preview | code) ─────────────────────────────
+    let viewMode = 'preview';
 
-  if (!response.ok) {
-    alert("API Error: " + text);
-    return;
-  }
+    // ── Persistence ────────────────────────────────────────────
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { }
+    }
 
-  const data = JSON.parse(text);
-  return data.choices[0].message.content;
-}
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.projects)) {
+            state = parsed;
+          }
+        }
+      } catch (e) { }
+    }
 
-/* ===============================
-   EVENTS
-================================= */
-document.getElementById("newProjectBtn").onclick = newProject;
-document.getElementById("openSettings").onclick = () =>
-  document.getElementById("settingsModal").classList.remove("hidden");
-document.getElementById("closeSettings").onclick = closeModal;
-document.getElementById("saveSettings").onclick = saveSettings;
+    function saveSettings() {
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { }
+    }
 
-document.getElementById("sendBtn").onclick = async () => {
-  const prompt = userInput.value.trim();
-  if (!prompt) return;
-  if (currentProjectIndex === null) newProject();
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed) settings = { ...settings, ...parsed };
+        }
+      } catch (e) { }
+    }
 
-  const html = await generateWebsite(prompt);
-  if (!html) return;
+    // ── Project Helpers ────────────────────────────────────────
+    function genId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
 
-  projects[currentProjectIndex].html = html;
-  saveProjects();
-  updateOutput(html);
-  userInput.value = "";
-};
-</script>
+    function getActiveProject() {
+      return state.projects.find(p => p.id === state.activeProjectId) || null;
+    }
 
+    function createProject(name) {
+      const project = {
+        id: genId(),
+        name: name || 'Untitled Project',
+        messages: [],
+        html: '',
+        createdAt: Date.now()
+      };
+      state.projects.unshift(project);
+      state.activeProjectId = project.id;
+      saveState();
+      return project;
+    }
+
+    function deleteProject(id) {
+      state.projects = state.projects.filter(p => p.id !== id);
+      if (state.activeProjectId === id) {
+        state.activeProjectId = state.projects[0]?.id || null;
+      }
+      saveState();
+    }
+
+    // ── Render Sidebar ─────────────────────────────────────────
+    function renderSidebar() {
+      const items = state.projects;
+      if (items.length === 0) {
+        $projectList.innerHTML = '<div class="empty-projects">No projects yet.</div>';
+        return;
+      }
+      $projectList.innerHTML = '';
+      items.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'project-item' + (p.id === state.activeProjectId ? ' active' : '');
+        div.dataset.id = p.id;
+        div.innerHTML = `
+      <span class="project-icon">◈</span>
+      <span class="project-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+      <button class="delete-btn" data-id="${p.id}" title="Delete project">✕</button>
+    `;
+        div.addEventListener('click', (e) => {
+          if (e.target.closest('.delete-btn')) {
+            e.stopPropagation();
+            const delId = e.target.closest('.delete-btn').dataset.id;
+            if (confirm('Delete this project?')) {
+              deleteProject(delId);
+              renderAll();
+            }
+            return;
+          }
+          switchProject(p.id);
+        });
+        $projectList.appendChild(div);
+      });
+    }
+
+    // ── Switch Project ─────────────────────────────────────────
+    function switchProject(id) {
+      state.activeProjectId = id;
+      saveState();
+      renderAll();
+      // Close sidebar on mobile
+      if (window.innerWidth < 768) closeSidebar();
+    }
+
+    // ── Render Chat ────────────────────────────────────────────
+    function renderChat() {
+      const project = getActiveProject();
+
+      // Clear existing messages (keep welcome state in DOM, just hide/show)
+      const existingMsgs = $chatMessages.querySelectorAll('.msg');
+      existingMsgs.forEach(m => m.remove());
+
+      if (!project || project.messages.length === 0) {
+        $welcomeState.style.display = 'flex';
+        return;
+      }
+
+      $welcomeState.style.display = 'none';
+
+      project.messages.forEach(m => {
+        appendMessageDOM(m.role, m.content, false);
+      });
+
+      scrollChatBottom();
+    }
+
+    function appendMessageDOM(role, content, animate = true) {
+      $welcomeState.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.className = `msg ${role}${animate ? '' : ''}`;
+      if (!animate) div.style.animation = 'none';
+
+      const label = document.createElement('div');
+      label.className = 'msg-label';
+      label.textContent = role === 'user' ? 'You' : 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+
+      if (role === 'assistant') {
+        // For AI messages, show a short summary (not the full HTML)
+        const summary = summarizeAiResponse(content);
+        bubble.textContent = summary;
+      } else {
+        bubble.textContent = content;
+      }
+
+      div.appendChild(label);
+      div.appendChild(bubble);
+      $chatMessages.appendChild(div);
+      scrollChatBottom();
+      return div;
+    }
+
+    function appendErrorMessage(text) {
+      $welcomeState.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.className = 'msg assistant error';
+
+      const label = document.createElement('div');
+      label.className = 'msg-label';
+      label.textContent = 'Error';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.textContent = text;
+
+      div.appendChild(label);
+      div.appendChild(bubble);
+      $chatMessages.appendChild(div);
+      scrollChatBottom();
+    }
+
+    function summarizeAiResponse(content) {
+      // If it looks like HTML, show a quick summary
+      const trimmed = content.trim();
+      if (trimmed.startsWith('<!') || trimmed.startsWith('<html')) {
+        // Count tags to summarize
+        const tagCount = (trimmed.match(/<[a-zA-Z]/g) || []).length;
+        const hasStyles = trimmed.includes('<style');
+        const hasScript = trimmed.includes('<script');
+        return `✓ Generated HTML page (${tagCount} elements${hasStyles ? ', CSS' : ''}${hasScript ? ', JS' : ''})`;
+      }
+      return content.length > 200 ? content.slice(0, 200) + '…' : content;
+    }
+
+    function scrollChatBottom() {
+      $chatMessages.scrollTop = $chatMessages.scrollHeight;
+    }
+
+    // ── Render Output (Preview / Code) ───────────────────────
+    function renderOutput() {
+      const project = getActiveProject();
+      const html = project?.html || '';
+
+      if (!html) {
+        // Nothing generated yet
+        $previewHolder.classList.remove('hidden');
+        $previewFrame.classList.remove('active');
+        $codeView.classList.remove('active');
+        return;
+      }
+
+      $previewHolder.classList.add('hidden');
+
+      if (viewMode === 'preview') {
+        $codeView.classList.remove('active');
+        $previewFrame.classList.add('active');
+        // Use srcdoc to safely set iframe content
+        $previewFrame.srcdoc = html;
+      } else {
+        $previewFrame.classList.remove('active');
+        $codeView.classList.add('active');
+        $codeContent.textContent = html;
+      }
+    }
+
+    // ── Render Project Title ───────────────────────────────────
+    function renderTitle() {
+      const project = getActiveProject();
+      $projectTitle.textContent = project ? project.name : 'AI Website Builder';
+    }
+
+    // ── Render All ─────────────────────────────────────────────
+    function renderAll() {
+      renderSidebar();
+      renderChat();
+      renderOutput();
+      renderTitle();
+    }
+
+    // ── View Toggle ────────────────────────────────────────────
+    $btnViewPreview.addEventListener('click', () => {
+      viewMode = 'preview';
+      $btnViewPreview.classList.add('active');
+      $btnViewCode.classList.remove('active');
+      renderOutput();
+    });
+
+    $btnViewCode.addEventListener('click', () => {
+      viewMode = 'code';
+      $btnViewCode.classList.add('active');
+      $btnViewPreview.classList.remove('active');
+      renderOutput();
+    });
+
+    // ── Download ───────────────────────────────────────────────
+    $btnDownload.addEventListener('click', () => {
+      const project = getActiveProject();
+      if (!project || !project.html) {
+        alert('No website generated yet. Send a message to generate one first.');
+        return;
+      }
+      const blob = new Blob([project.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = (project.name || 'website').replace(/[^a-z0-9_-]/gi, '_').toLowerCase();
+      a.href = url;
+      a.download = `${safeName}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ── New Project ────────────────────────────────────────────
+    $btnNewProject.addEventListener('click', () => {
+      const name = prompt('Project name:', 'New Project') || 'New Project';
+      createProject(name.trim() || 'New Project');
+      renderAll();
+      if (window.innerWidth < 768) closeSidebar();
+    });
+
+    // ── Example Chips ──────────────────────────────────────────
+    $welcomeState.addEventListener('click', (e) => {
+      const chip = e.target.closest('.example-chip');
+      if (!chip) return;
+      const prompt = chip.dataset.prompt;
+      $userInput.value = prompt;
+      $userInput.dispatchEvent(new Event('input'));
+      sendMessage();
+    });
+
+    // ── Settings Modal ─────────────────────────────────────────
+    function openSettings() {
+      $inputApiUrl.value = settings.apiUrl || DEFAULT_API_URL;
+      $inputApiKey.value = settings.apiKey || '';
+      $inputModel.value = settings.model || DEFAULT_MODEL;
+      $modalOverlay.classList.add('open');
+      $inputApiKey.focus();
+    }
+
+    function closeSettings() {
+      $modalOverlay.classList.remove('open');
+    }
+
+    $btnSettings.addEventListener('click', openSettings);
+    $btnCloseModal.addEventListener('click', closeSettings);
+    $btnCancelSettings.addEventListener('click', closeSettings);
+
+    $modalOverlay.addEventListener('click', (e) => {
+      if (e.target === $modalOverlay) closeSettings();
+    });
+
+    $btnSaveSettings.addEventListener('click', () => {
+      settings.apiUrl = $inputApiUrl.value.trim() || DEFAULT_API_URL;
+      settings.apiKey = $inputApiKey.value.trim();
+      settings.model = $inputModel.value.trim() || DEFAULT_MODEL;
+      saveSettings();
+      closeSettings();
+    });
+
+    // ── Auto-resize textarea ───────────────────────────────────
+    $userInput.addEventListener('input', () => {
+      $userInput.style.height = 'auto';
+      $userInput.style.height = Math.min($userInput.scrollHeight, 120) + 'px';
+    });
+
+    // ── Send on Enter (Shift+Enter = newline) ──────────────────
+    $userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    $btnSend.addEventListener('click', sendMessage);
+
+    // ── Send Message ───────────────────────────────────────────
+    async function sendMessage() {
+      const text = $userInput.value.trim();
+      if (!text) return;
+
+      // Validate settings
+      if (!settings.apiKey) {
+        alert('Please set your API key in ⚙ Settings before sending a message.');
+        openSettings();
+        return;
+      }
+
+      // Ensure active project
+      let project = getActiveProject();
+      if (!project) {
+        // Auto-create project with first prompt as name
+        const autoName = text.length > 40 ? text.slice(0, 40) + '…' : text;
+        project = createProject(autoName);
+        renderSidebar();
+        renderTitle();
+      }
+
+      // Add user message
+      const userMsg = { role: 'user', content: text };
+      project.messages.push(userMsg);
+      saveState();
+
+      $userInput.value = '';
+      $userInput.style.height = 'auto';
+
+      appendMessageDOM('user', text);
+      setBusy(true);
+
+      try {
+        const html = await callApi(project.messages);
+
+        // Store assistant response
+        project.messages.push({ role: 'assistant', content: html });
+        project.html = html;
+        saveState();
+
+        appendMessageDOM('assistant', html);
+        renderOutput();
+
+        // Auto-update project name from first message if still "Untitled"
+        if (project.name === 'Untitled Project' || project.name.endsWith('…')) {
+          const autoName = text.length > 35 ? text.slice(0, 35) + '…' : text;
+          project.name = autoName;
+          saveState();
+          renderSidebar();
+          renderTitle();
+        }
+
+      } catch (err) {
+        appendErrorMessage(err.message || 'An unknown error occurred.');
+        // Remove the last user message from history on failure
+        project.messages.pop();
+        saveState();
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    // ── API Call ───────────────────────────────────────────────
+    async function callApi(conversationHistory) {
+      const apiUrl = settings.apiUrl || DEFAULT_API_URL;
+      const apiKey = settings.apiKey;
+      const model = settings.model || DEFAULT_MODEL;
+
+      // Build messages array: system + conversation
+      const messages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...conversationHistory
+      ];
+
+      const payload = {
+        model,
+        messages,
+        max_tokens: 8192,
+        temperature: 0.7
+      };
+
+      let response;
+      try {
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            // OpenRouter-specific headers (ignored by other providers)
+            'HTTP-Referer': window.location.origin || 'https://ai-website-builder.app',
+            'X-Title': 'AI Website Builder'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (networkErr) {
+        throw new Error('Network error: Could not reach the API. Check your connection and API URL.');
+      }
+
+      // ── Anti-crash JSON Logic ───────────────────────────────
+      const text = await response.text();
+
+      if (!response.ok) {
+        // Try to parse for a nice error message, but don't crash
+        let errMsg = `HTTP ${response.status}`;
+        try {
+          const errJson = JSON.parse(text);
+          errMsg = errJson?.error?.message || errJson?.message || errMsg;
+        } catch (_) {
+          // text may not be JSON — show raw (truncated)
+          errMsg += ': ' + text.slice(0, 200);
+        }
+        throw new Error('API Error: ' + errMsg);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error('Failed to parse API response as JSON. Raw response: ' + text.slice(0, 300));
+      }
+
+      // Extract content
+      const choice = data?.choices?.[0];
+      if (!choice) {
+        throw new Error('Unexpected API response: no choices returned. Response: ' + text.slice(0, 300));
+      }
+
+      const rawContent = choice?.message?.content || '';
+      if (!rawContent) {
+        throw new Error('The model returned an empty response. Try again or adjust your prompt.');
+      }
+
+      // Strip any accidental markdown code fences the model might have added
+      return stripCodeFences(rawContent.trim());
+    }
+
+    // ── Strip Code Fences ──────────────────────────────────────
+    function stripCodeFences(raw) {
+      // Remove ```html ... ``` or ``` ... ```
+      let cleaned = raw
+        .replace(/^```(?:html)?\s*/i, '')
+        .replace(/\s*```\s*$/i, '')
+        .trim();
+
+      // Find first < to start of HTML in case there's leading text
+      const htmlStart = cleaned.indexOf('<!DOCTYPE') !== -1
+        ? cleaned.indexOf('<!DOCTYPE')
+        : cleaned.indexOf('<html');
+
+      if (htmlStart > 0) {
+        cleaned = cleaned.slice(htmlStart);
+      }
+
+      return cleaned;
+    }
+
+    // ── Busy State ─────────────────────────────────────────────
+    function setBusy(busy) {
+      $btnSend.disabled = busy;
+      $userInput.disabled = busy;
+
+      if (busy) {
+        $typingIndicator.classList.add('visible');
+        $chatMessages.appendChild($typingIndicator);
+        scrollChatBottom();
+      } else {
+        $typingIndicator.classList.remove('visible');
+      }
+    }
+
+    // ── Sidebar Toggle (Mobile) ────────────────────────────────
+    $btnSidebarToggle.addEventListener('click', () => {
+      $sidebar.classList.toggle('open');
+    });
+
+    function closeSidebar() {
+      $sidebar.classList.remove('open');
+    }
+
+    // Close sidebar on outside click (mobile)
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth < 768 && $sidebar.classList.contains('open')) {
+        if (!$sidebar.contains(e.target) && e.target !== $btnSidebarToggle) {
+          closeSidebar();
+        }
+      }
+    });
+
+    // ── Resize Handle ──────────────────────────────────────────
+    (function initResize() {
+      const handle = document.getElementById('resize-handle');
+      const chatPanel = document.getElementById('chat-panel');
+      let dragging = false;
+      let startX = 0;
+      let startW = 0;
+
+      handle.addEventListener('mousedown', (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startW = chatPanel.offsetWidth;
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const delta = e.clientX - startX;
+        const newW = Math.min(Math.max(startW + delta, 220), window.innerWidth * 0.65);
+        chatPanel.style.width = newW + 'px';
+        chatPanel.style.minWidth = '220px';
+        chatPanel.style.maxWidth = '65vw';
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      });
+    })();
+
+    // ── Escape HTML ────────────────────────────────────────────
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Keyboard shortcut: Escape closes modal ─────────────────
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $modalOverlay.classList.contains('open')) {
+        closeSettings();
+      }
+    });
+
+    // ── Boot ───────────────────────────────────────────────────
+    (function boot() {
+      loadSettings();
+      loadState();
+
+      // If no active project but projects exist, pick the first
+      if (!state.activeProjectId && state.projects.length > 0) {
+        state.activeProjectId = state.projects[0].id;
+      }
+
+      renderAll();
+    })();
+  </script>
 </body>
+
 </html>
