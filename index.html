@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Website Builder</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+</style>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- MAIN CONTAINER -->
+<div class="flex flex-1 overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-white border-r flex flex-col">
+    <div class="p-4 border-b">
+      <button id="newProjectBtn"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">
+        + New Project
+      </button>
+    </div>
+
+    <div id="projectList" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+
+    <div class="p-4 border-t">
+      <button id="openSettings" class="text-gray-600 hover:text-black">
+        ⚙ Settings
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN PANEL -->
+  <div class="flex flex-col flex-1 overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="flex items-center justify-between bg-white border-b px-4 py-2">
+      <div class="flex items-center space-x-2 text-xl">
+        <span>🔴</span>
+        <span>🟡</span>
+        <span>🟢</span>
+      </div>
+
+      <div class="flex space-x-2">
+        <button id="previewBtn" class="px-3 py-1 bg-gray-200 rounded">Preview</button>
+        <button id="codeBtn" class="px-3 py-1 bg-gray-200 rounded">Code</button>
+        <button id="downloadBtn" class="px-3 py-1 bg-green-600 text-white rounded">Download</button>
+      </div>
+    </header>
+
+    <!-- OUTPUT AREA -->
+    <main class="flex-1 overflow-auto bg-white relative">
+      <iframe id="previewFrame" class="w-full h-full hidden"></iframe>
+      <pre id="codeView" class="p-4 text-sm overflow-auto"></pre>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t bg-white p-3 flex-shrink-0">
+      <div class="flex space-x-2">
+        <textarea id="userInput"
+          class="flex-1 border rounded p-2 resize-none"
+          rows="2"
+          placeholder="Describe your website..."></textarea>
+        <button id="sendBtn"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded">
+          Send
+        </button>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+  <div class="bg-white w-96 p-6 rounded shadow-lg space-y-4">
+    <h2 class="text-lg font-semibold">Settings</h2>
+
+    <div>
+      <label class="text-sm">API URL</label>
+      <input id="apiUrlInput" type="text"
+        class="w-full border rounded p-2 mt-1" />
+    </div>
+
+    <div>
+      <label class="text-sm">API Key</label>
+      <input id="apiKeyInput" type="password"
+        class="w-full border rounded p-2 mt-1" />
+    </div>
+
+    <div>
+      <label class="text-sm">Model ID</label>
+      <input id="modelInput" type="text"
+        class="w-full border rounded p-2 mt-1" />
+    </div>
+
+    <div class="flex justify-end space-x-2">
+      <button id="closeSettings" class="px-3 py-1 bg-gray-200 rounded">Cancel</button>
+      <button id="saveSettings" class="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===============================
+   CONFIG (FORCED OPENROUTER)
+================================= */
+const SYSTEM_PROMPT =
+"You are a web developer. Output ONLY raw HTML code. No markdown. No explanations.";
+
+let API_URL = "https://openrouter.ai/api/v1/chat/completions";
+let MODEL_ID = "deepseek/deepseek-r1:free";
+let API_KEY = "";
+
+/* ===============================
+   STATE
+================================= */
+let projects = JSON.parse(localStorage.getItem("ai_builder_projects") || "[]");
+let currentProjectIndex = null;
+
+/* ===============================
+   DOM
+================================= */
+const projectList = document.getElementById("projectList");
+const previewFrame = document.getElementById("previewFrame");
+const codeView = document.getElementById("codeView");
+const userInput = document.getElementById("userInput");
+
+/* ===============================
+   INIT
+================================= */
+function init() {
+  loadSettings();
+  renderProjects();
+}
+init();
+
+/* ===============================
+   SETTINGS
+================================= */
+function loadSettings() {
+  const saved = JSON.parse(localStorage.getItem("ai_builder_settings") || "{}");
+  API_URL = saved.apiUrl || API_URL;
+  MODEL_ID = saved.modelId || MODEL_ID;
+  API_KEY = saved.apiKey || "";
+
+  document.getElementById("apiUrlInput").value = API_URL;
+  document.getElementById("modelInput").value = MODEL_ID;
+  document.getElementById("apiKeyInput").value = API_KEY;
+}
+
+function saveSettings() {
+  API_URL = document.getElementById("apiUrlInput").value;
+  MODEL_ID = document.getElementById("modelInput").value;
+  API_KEY = document.getElementById("apiKeyInput").value;
+
+  localStorage.setItem("ai_builder_settings", JSON.stringify({
+    apiUrl: API_URL,
+    modelId: MODEL_ID,
+    apiKey: API_KEY
+  }));
+
+  closeModal();
+}
+
+function closeModal() {
+  document.getElementById("settingsModal").classList.add("hidden");
+}
+
+/* ===============================
+   PROJECTS
+================================= */
+function renderProjects() {
+  projectList.innerHTML = "";
+  projects.forEach((p, index) => {
+    const btn = document.createElement("button");
+    btn.className = "w-full text-left px-3 py-2 bg-gray-100 rounded hover:bg-gray-200";
+    btn.textContent = p.name;
+    btn.onclick = () => loadProject(index);
+    projectList.appendChild(btn);
+  });
+}
+
+function newProject() {
+  const name = "Project " + (projects.length + 1);
+  projects.push({ name, html: "" });
+  currentProjectIndex = projects.length - 1;
+  saveProjects();
+  renderProjects();
+  updateOutput("");
+}
+
+function loadProject(index) {
+  currentProjectIndex = index;
+  updateOutput(projects[index].html);
+}
+
+function saveProjects() {
+  localStorage.setItem("ai_builder_projects", JSON.stringify(projects));
+}
+
+/* ===============================
+   OUTPUT
+================================= */
+function updateOutput(html) {
+  previewFrame.srcdoc = html;
+  codeView.textContent = html;
+}
+
+document.getElementById("previewBtn").onclick = () => {
+  previewFrame.classList.remove("hidden");
+  codeView.classList.add("hidden");
+};
+
+document.getElementById("codeBtn").onclick = () => {
+  codeView.classList.remove("hidden");
+  previewFrame.classList.add("hidden");
+};
+
+document.getElementById("downloadBtn").onclick = () => {
+  if (currentProjectIndex === null) return;
+  const blob = new Blob([projects[currentProjectIndex].html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "index.html";
+  a.click();
+};
+
+/* ===============================
+   API CALL (ANTI-CRASH JSON)
+================================= */
+async function generateWebsite(prompt) {
+  if (!API_KEY) {
+    alert("Please set API Key in settings.");
+    return;
+  }
+
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + API_KEY
+    },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: prompt }
+      ]
+    })
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    alert("API Error: " + text);
+    return;
+  }
+
+  const data = JSON.parse(text);
+  return data.choices[0].message.content;
+}
+
+/* ===============================
+   EVENTS
+================================= */
+document.getElementById("newProjectBtn").onclick = newProject;
+document.getElementById("openSettings").onclick = () =>
+  document.getElementById("settingsModal").classList.remove("hidden");
+document.getElementById("closeSettings").onclick = closeModal;
+document.getElementById("saveSettings").onclick = saveSettings;
+
+document.getElementById("sendBtn").onclick = async () => {
+  const prompt = userInput.value.trim();
+  if (!prompt) return;
+  if (currentProjectIndex === null) newProject();
+
+  const html = await generateWebsite(prompt);
+  if (!html) return;
+
+  projects[currentProjectIndex].html = html;
+  saveProjects();
+  updateOutput(html);
+  userInput.value = "";
+};
+</script>
+
+</body>
+</html>
